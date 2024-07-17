@@ -1,0 +1,1 @@
+export const  ws = new WebSocket("wss://xa7rjbut51.execute-api.us-east-1.amazonaws.com/testing/");
