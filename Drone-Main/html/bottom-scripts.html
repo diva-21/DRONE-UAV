@@ -1,0 +1,227 @@
+<script src="//code.jquery.com/jquery-2.1.1.min.js"></script>
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+<script src='https://api.tiles.mapbox.com/mapbox.js/v2.1.4/mapbox.js'></script>
+<!-- <link href="/assets/styles.css" rel="stylesheet" /> -->
+<script>
+	const ws = new WebSocket("wss://yw9v2tyflf.execute-api.us-east-1.amazonaws.com/production/");
+	ws.addEventListener("open",()=>{
+		is_flying=false
+		$.get("/has_takenoff").then((resp) => {
+							resp = resp.position
+							console.log(resp)
+							if(resp===true)
+							{
+								is_flying=true
+							}
+	    });
+		console.log("websocket connected from gs")
+	})
+	let ans;
+	ws.addEventListener("message",(data)=>{
+		var movecommand = true;
+		// console.log(data);
+		data = data.data;
+		if(data.includes("guest:")){
+			data = data.split(":")
+			data = data[data.length - 1]
+			data = data.trim()
+			console.log("Message from WS: "+data);
+			console.log("Drone is flying?  "+is_flying)
+			console.log("Message to WS: ")
+			if((is_flying===false && data.includes("TAKEOFF")===false))
+			{
+				ws.send(JSON.stringify({
+								action:"sendMessage",
+								message:"The drone is not flying , use TAKEOFF command"
+					    }));
+				return
+			}
+			if((is_flying===true && data.includes("TAKEOFF")===true))
+			{
+				ws.send(JSON.stringify({
+								action:"sendMessage",
+								message:"The drone is flying, you can give commands to move it"
+					    }));
+				return
+			}
+			console.log(data)
+			if (data.includes("WEST") && is_flying) {
+				data = data.replaceAll("WEST", "")
+				data = parseInt(data)
+				data = { north: 0, east: -data }; $.get("/goto", data).then((resp) => {
+					resp = resp.position
+					if(resp==-1)
+					{
+						ws.send(JSON.stringify({
+									action:"sendMessage",
+									message:"GeoFence Hit!!"
+								}));
+					}
+					else
+					{
+						ws.send(JSON.stringify({
+									action:"sendMessage",
+									message:"The drone has moved towards WEST by "+resp+"m"
+								}));
+					}	
+				});
+			}
+			else if (data.includes("EAST") && is_flying) {
+				data = data.replaceAll("EAST", "")
+				data = parseInt(data)
+				data = { north: 0, east: data }; $.get("/goto", data).then((resp) => {
+					resp = resp.position
+					if(resp==-1)
+					{
+						ws.send(JSON.stringify({
+									action:"sendMessage",
+									message:"GeoFence Hit!!"
+								}));
+					}
+					else
+					{
+						ws.send(JSON.stringify({
+									action:"sendMessage",
+									message:"The drone has moved towards EAST by "+resp+"m"
+								}));
+					}
+				});
+			}
+			else if (data.includes("NORTH") && is_flying ) {
+				data = data.replaceAll("NORTH", "")
+				data = parseInt(data)
+				data = { north: data, east: 0 }; $.get("/goto", data).then((resp) => {
+					resp = resp.position
+					if(resp==-1)
+					{
+						ws.send(JSON.stringify({
+									action:"sendMessage",
+									message:"GeoFence Hit!!"
+								}));
+					}
+					else
+					{
+						ws.send(JSON.stringify({
+									action:"sendMessage",
+									message:"The drone has moved towards NORTH by "+resp+"m"
+								}));
+					}
+				});
+			}
+			else if (data.includes("SOUTH") && is_flying ) {
+				data = data.replaceAll("SOUTH", "")
+				data = parseInt(data)
+				data = { north: -data, east: 0 }; $.get("/goto", data).then((resp) => {
+					resp = resp.position
+					if(resp==-1)
+					{
+						ws.send(JSON.stringify({
+									action:"sendMessage",
+									message:"GeoFence Hit!!"
+								}));
+					}
+					else
+					{
+						ws.send(JSON.stringify({
+									action:"sendMessage",
+									message:"The drone has moved towards SOUTH by "+resp+"m"
+								}));
+					}
+				});
+			}
+			else if (data.includes("HEIGHT") && is_flying ) {
+				// console.log("INSIDE HEIGHT METHOD")
+				data = data.replaceAll("HEIGHT", "")
+				data = parseInt(data)
+				if(data<5 || data >45)
+				{
+					ws.send(JSON.stringify({
+									action:"sendMessage",
+									message:"It is breaching the range of Altitude!!"
+					}));
+				}
+				console.log("Possible height")
+				data = { altitude : data}; $.get("/altitude", data).then((resp) => {
+					resp = resp.position
+					console.log(resp)
+						ws.send(JSON.stringify({
+									action:"sendMessage",
+									message:"The drone has moved up to an altitude of "+resp+"m"
+						}));
+					}
+				);
+			}
+            else if (data.includes("SOUTHWEST") && is_flying){
+                data = data.replaceAll("SOUTHWEST", "")
+				data = parseInt(data)
+                data = int(data/1.414)
+				data = { north: -data, east: -data }; $.get("/goto", data).then((resp) => {
+					resp = resp.position
+					if(resp==-1)
+					{
+						ws.send(JSON.stringify({
+									action:"sendMessage",
+									message:"GeoFence Hit!!"
+								}));
+					}
+					else
+					{
+						ws.send(JSON.stringify({
+									action:"sendMessage",
+									message:"The drone has moved towards SOUTH WEST by "+resp+"m"
+								}));
+					}
+				});
+            }
+		    else{
+				movecommand = false;
+				if(data=="TAKEOFF" && is_flying===false){
+						console.log("TAKEOFF command");
+						$.get("/launch").then((resp) => {
+							resp = resp.position
+							console.log(resp)
+							is_flying=true
+							ws.send(JSON.stringify({
+								action:"sendMessage",
+								message:resp
+							}));
+						});
+				}
+				else if(data=="RTL" && is_flying===true){
+						console.log("RTL command");
+						$.get("/rtl").then((resp) => {
+							resp = resp.position
+							is_flying=false
+							ws.send(JSON.stringify({
+								action:"sendMessage",
+								message:resp
+							}));
+						});
+				}
+				else if(data=="STATUS"){
+						console.log("STATUS command");
+						$.get("/status").then((resp) => {
+							resp = resp.position
+							console.log(resp)
+							ws.send(JSON.stringify({
+								action:"sendMessage",
+								message:"The distance from Launch Location is " + resp + "m"
+							}));
+						});
+				}
+			    else{
+					console.log("unknown command")
+					ws.send(JSON.stringify({
+							action:"sendMessage",
+							message:"This is an unknown command, give a valid command"
+					}));
+				}
+			}
+		}
+	}
+	)
+	ws.addEventListener('error', function(event) {
+    console.error('WebSocket error:', event);
+});
+
+</script>

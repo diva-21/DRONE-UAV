@@ -1,0 +1,89 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    {% include 'head.html' %}
+    <style>
+        body {
+            align-items: center;
+             /* Background image */
+            background-size: cover; /* Cover the entire body */
+            background-repeat: no-repeat; /* No repeating */
+            color: #fff; /* White text color for better contrast */
+            margin: 0; /* Remove default margin */
+            padding: 0; /* Remove default padding */
+        }
+        .container {
+            max-width: 800px; /* Limit container width */
+            margin: 0 auto; /* Center container horizontally */
+            padding: 20px; /* Add padding */
+        }
+        .header {
+            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white background for header */
+            padding: 20px; /* Add padding */
+            margin-bottom: 20px; /* Add some space below header */
+            color: #000; /* Black text color */
+            text-align: center; /* Center align header */
+        }
+        .nav-bar {
+            background-color: #0B163A; /* Darker blue for navigation bar */
+            padding: 10px; /* Add padding */
+        }
+        .nav-bar a {
+            color: #fff; /* White text color for navigation links */
+            text-decoration: none; /* Remove underline */
+            margin-right: 20px; /* Add some space between links */
+        }
+        .content-box {
+            background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black background for content */
+            padding: 20px; /* Add padding */
+            margin-top: 20px; /* Add space on top */
+        }
+        .console-box {
+            border: 2px solid #ccc; /* Dark border */
+            background-color: #fff; /* White background for console */
+            color: #000; /* Black text color */
+            padding: 20px; /* Add padding */
+            margin-top: 20px; /* Add space on top */
+        }
+        #console {
+            height: 200px; /* Set height */
+            overflow-y: scroll; /* Add scroll for overflow */
+            border: 1px solid #ddd; /* Light border for console */
+            padding: 10px; /* Add padding */
+        }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class="nav-bar">
+            <a href="https://dronekit-python.readthedocs.io/en/latest/automodule.html" target="_blank">DroneKit API Documentation</a>
+        </div>
+        <div class='header'>
+            <h1>Drone Control</h1>
+            <p class='lead'>Control a drone movement from a web app</p>
+            <img src="">
+        </div>
+        <div class="content-box">
+            The bottom area shows the messages printed in console
+            <!-- <img src="/Garuda/html/background.jpg"> -->
+        </div>
+        <div class="console-box">
+            <div id="console"></div>
+        </div>
+    </div>
+    {% include 'bottom-scripts.html' %}
+    <script>
+        // Function to capture console output and display it in the designated area
+        (function() {
+            var oldConsoleLog = console.log;
+            console.log = function(message) {
+                oldConsoleLog.apply(console, arguments); // Preserve original console.log functionality
+                var consoleDiv = document.getElementById('console');
+                if (consoleDiv) {
+                    consoleDiv.innerHTML += message + '<br>'; // Append the console message to the designated area
+                }
+            }
+        })();
+    </script>
+</body>
+</html>

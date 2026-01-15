@@ -1,0 +1,4 @@
+/.idea
+*.log
+drone_control_org.py
+drone_control_with_camera_control.py
